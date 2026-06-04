@@ -32,236 +32,236 @@ export const createCart = async (req, res) => {
     }
 };
 
-export const addItemToCart = async (req, res) => {
-    try {
-        const { cartId, productId, quantity } = req.body;
+// export const addItemToCart = async (req, res) => {
+//     try {
+//         const { cartId, productId, quantity } = req.body;
 
-        const cart = await Cart.findById(cartId);
+//         const cart = await Cart.findById(cartId);
 
-        if (!cart) {
-            res.status(404).json({
-                success: false,
-                message: "Cart not found",
-                error: {
-                    reason: "No cart exists with the provided ID",
-                    possibleCauses: [
-                        "Invalid cart ID",
-                        "Cart was deleted",
-                        "Cart does not exist"
-                    ]
-                }
-            });
-        }
+//         if (!cart) {
+//             res.status(404).json({
+//                 success: false,
+//                 message: "Cart not found",
+//                 error: {
+//                     reason: "No cart exists with the provided ID",
+//                     possibleCauses: [
+//                         "Invalid cart ID",
+//                         "Cart was deleted",
+//                         "Cart does not exist"
+//                     ]
+//                 }
+//             });
+//         }
 
-        const product = await Product.findById(productId);
+//         const product = await Product.findById(productId);
 
-        if (!product) {
-            res.status(404).json({
-                success: false,
-                message: "Product not found",
-                error: {
-                    reason: "No product exists with the provided ID",
-                    possibleCauses: [
-                        "Invalid product ID",
-                        "Product was removed",
-                        "Product does not exist"
-                    ]
-                }
-            });
-        }
+//         if (!product) {
+//             res.status(404).json({
+//                 success: false,
+//                 message: "Product not found",
+//                 error: {
+//                     reason: "No product exists with the provided ID",
+//                     possibleCauses: [
+//                         "Invalid product ID",
+//                         "Product was removed",
+//                         "Product does not exist"
+//                     ]
+//                 }
+//             });
+//         }
 
-        const total = product.price * quantity;
+//         const total = product.price * quantity;
 
-        cart.items.push({
-            productId,
-            quantity,
-            unitPrice: product.price,
-            total
-        });
+//         cart.items.push({
+//             productId,
+//             quantity,
+//             unitPrice: product.price,
+//             total
+//         });
 
-        cart.subtotal += total;
-        cart.totalAmount += total;
+//         cart.subtotal += total;
+//         cart.totalAmount += total;
 
-        await cart.save();
+//         await cart.save();
 
-        res.status(200).json({
-            success: true,
-            message: "Item added to cart successfully",
-            data: cart
-        });
+//         res.status(200).json({
+//             success: true,
+//             message: "Item added to cart successfully",
+//             data: cart
+//         });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to add item to cart",
-            error: {
-                reason: error.message,
-                possibleCauses: [
-                    "Database error",
-                    "Invalid request data",
-                    "Server error"
-                ]
-            }
-        });
-    }
-};
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to add item to cart",
+//             error: {
+//                 reason: error.message,
+//                 possibleCauses: [
+//                     "Database error",
+//                     "Invalid request data",
+//                     "Server error"
+//                 ]
+//             }
+//         });
+//     }
+// };
 
-export const removeItemFromCart = async (req, res) => {
-    try {
+// export const removeItemFromCart = async (req, res) => {
+//     try {
 
-        const { cartId } = req.body;
-        const { productId } = req.params;
+//         const { cartId } = req.body;
+//         const { productId } = req.params;
 
-        const cart = await Cart.findById(cartId);
+//         const cart = await Cart.findById(cartId);
 
-        if (!cart) {
-            res.status(404).json({
-                success: false,
-                message: "Cart not found",
-                error: {
-                    reason: "No cart exists with the provided ID",
-                    possibleCauses: [
-                        "Invalid cart ID",
-                        "Cart was deleted",
-                        "Cart does not exist"
-                    ]
-                }
-            });
-        }
+//         if (!cart) {
+//             res.status(404).json({
+//                 success: false,
+//                 message: "Cart not found",
+//                 error: {
+//                     reason: "No cart exists with the provided ID",
+//                     possibleCauses: [
+//                         "Invalid cart ID",
+//                         "Cart was deleted",
+//                         "Cart does not exist"
+//                     ]
+//                 }
+//             });
+//         }
 
-        const item = cart.items.find(
-            item => item.productId.toString() === productId
-        );
+//         const item = cart.items.find(
+//             item => item.productId.toString() === productId
+//         );
 
-        if (!item) {
-            res.status(404).json({
-                success: false,
-                message: "Item not found in cart",
-                error: {
-                    reason: "The specified product is not present in the cart",
-                    possibleCauses: [
-                        "Wrong product ID",
-                        "Item already removed",
-                        "Item never existed in cart"
-                    ]
-                }
-            });
-        }
+//         if (!item) {
+//             res.status(404).json({
+//                 success: false,
+//                 message: "Item not found in cart",
+//                 error: {
+//                     reason: "The specified product is not present in the cart",
+//                     possibleCauses: [
+//                         "Wrong product ID",
+//                         "Item already removed",
+//                         "Item never existed in cart"
+//                     ]
+//                 }
+//             });
+//         }
 
-        cart.subtotal -= item.total;
-        cart.totalAmount -= item.total;
+//         cart.subtotal -= item.total;
+//         cart.totalAmount -= item.total;
 
-        cart.items = cart.items.filter(
-            item => item.productId.toString() !== productId
-        );
+//         cart.items = cart.items.filter(
+//             item => item.productId.toString() !== productId
+//         );
 
-        await cart.save();
+//         await cart.save();
 
-        res.status(200).json({
-            success: true,
-            message: "Item removed from cart successfully",
-            data: cart
-        });
+//         res.status(200).json({
+//             success: true,
+//             message: "Item removed from cart successfully",
+//             data: cart
+//         });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to remove item from cart",
-            error: {
-                reason: error.message,
-                possibleCauses: [
-                    "Database error",
-                    "Server error"
-                ]
-            }
-        });
-    }
-};
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to remove item from cart",
+//             error: {
+//                 reason: error.message,
+//                 possibleCauses: [
+//                     "Database error",
+//                     "Server error"
+//                 ]
+//             }
+//         });
+//     }
+// };
 
-export const checkoutCart = async (req, res) => {
-    try {
+// export const checkoutCart = async (req, res) => {
+//     try {
 
-        const { cartId } = req.body;
+//         const { cartId } = req.body;
 
-        const cart = await Cart.findById(cartId);
+//         const cart = await Cart.findById(cartId);
 
-        if (!cart) {
-            res.status(404).json({
-                success: false,
-                message: "Cart not found",
-                error: {
-                    reason: "No cart exists with the provided ID",
-                    possibleCauses: [
-                        "Invalid cart ID",
-                        "Cart was deleted"
-                    ]
-                }
-            });
-        }
+//         if (!cart) {
+//             res.status(404).json({
+//                 success: false,
+//                 message: "Cart not found",
+//                 error: {
+//                     reason: "No cart exists with the provided ID",
+//                     possibleCauses: [
+//                         "Invalid cart ID",
+//                         "Cart was deleted"
+//                     ]
+//                 }
+//             });
+//         }
 
-        cart.status = "CHECKED_OUT";
+//         cart.status = "CHECKED_OUT";
 
-        await cart.save();
+//         await cart.save();
 
-        res.status(200).json({
-            success: true,
-            message: "Checkout completed successfully",
-            data: cart
-        });
+//         res.status(200).json({
+//             success: true,
+//             message: "Checkout completed successfully",
+//             data: cart
+//         });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Checkout failed",
-            error: {
-                reason: error.message,
-                possibleCauses: [
-                    "Database issue",
-                    "Cart update failed",
-                    "Server error"
-                ]
-            }
-        });
-    }
-};
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Checkout failed",
+//             error: {
+//                 reason: error.message,
+//                 possibleCauses: [
+//                     "Database issue",
+//                     "Cart update failed",
+//                     "Server error"
+//                 ]
+//             }
+//         });
+//     }
+// };
 
-export const deleteCart = async (req, res) => {
-    try {
+// export const deleteCart = async (req, res) => {
+//     try {
 
-        const { cartId } = req.params;
+//         const { cartId } = req.params;
 
-        const cart = await Cart.findByIdAndDelete(cartId);
+//         const cart = await Cart.findByIdAndDelete(cartId);
 
-        if (!cart) {
-            res.status(404).json({
-                success: false,
-                message: "Cart not found",
-                error: {
-                    reason: "No cart exists with the provided ID",
-                    possibleCauses: [
-                        "Invalid cart ID",
-                        "Cart already deleted"
-                    ]
-                }
-            });
-        }
+//         if (!cart) {
+//             res.status(404).json({
+//                 success: false,
+//                 message: "Cart not found",
+//                 error: {
+//                     reason: "No cart exists with the provided ID",
+//                     possibleCauses: [
+//                         "Invalid cart ID",
+//                         "Cart already deleted"
+//                     ]
+//                 }
+//             });
+//         }
 
-        res.status(200).json({
-            success: true,
-            message: "Cart deleted successfully"
-        });
+//         res.status(200).json({
+//             success: true,
+//             message: "Cart deleted successfully"
+//         });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to delete cart",
-            error: {
-                reason: error.message,
-                possibleCauses: [
-                    "Database error",
-                    "Server error"
-                ]
-            }
-        });
-    }
-};
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to delete cart",
+//             error: {
+//                 reason: error.message,
+//                 possibleCauses: [
+//                     "Database error",
+//                     "Server error"
+//                 ]
+//             }
+//         });
+//     }
+// };

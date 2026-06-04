@@ -1,12 +1,15 @@
 import express from "express";
 
-import {
-    createCart,
-    addItemToCart,
-    removeItemFromCart,
-    checkoutCart,
-    deleteCart
-} from "../controller/cartcontroller.js";
+import { createCart } from "../controller/cartcontroller.js";
+
+import { addItemToCart } from "../controller/addItemToCart.js";
+
+import { removeItemFromCart } from "../controller/removeItemFromCart.js";
+
+import { checkoutCart } from "../controller/checkoutCart.js";
+
+import { deleteCart } from "../controller/deleteCart.js";
+
 
 const router = express.Router();
 
