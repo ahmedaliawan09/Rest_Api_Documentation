@@ -14,3 +14,20 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Environment variables (IMPORTANT - Keep secrets safe!)
+.env
+.env.*
+backend/.env
+backend/.env.*
+!.env.example
+!backend/.env.example
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Node modules
+node_modules/
+backend/node_modules/
