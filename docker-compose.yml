@@ -1,0 +1,63 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: cart_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cartdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - cart_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cart_api
+    restart: always
+    environment:
+      - DATABASE_URL=mysql://root:root@mysql:3306/cartdb
+      - port=5000
+    ports:
+      - "5001:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - cart_network
+    command: sh -c "npx prisma migrate deploy && npm start"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: cart_phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - cart_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  cart_network:
+    driver: bridge

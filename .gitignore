@@ -1,0 +1,16 @@
+# Docker
+docker-compose.override.yml
+
+# Database backups
+*.sql
+backup.sql
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

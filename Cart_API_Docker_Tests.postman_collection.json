@@ -1,0 +1,654 @@
+{
+	"info": {
+		"name": "Cart API - Docker Tests (Port 5001)",
+		"description": "Comprehensive test suite with 50+ test cases for all Cart API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. User APIs (12 tests)",
+			"item": [
+				{
+					"name": "Test 1 - Create User Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response has success true\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"pm.test(\"User ID is returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.collectionVariables.set('userId', jsonData.data.id);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.{{$randomInt}}@example.com\",\n  \"phone\": \"123{{$randomInt}}\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 2 - Create User Missing All Fields",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error message about required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('required');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{}"},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 3 - Create User Missing Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error about required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('required');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone\": \"1234567890\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 4 - Create User Invalid Email Format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error about email format\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('email');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"invalid-email\",\n  \"phone\": \"1234567890\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 5 - Create User Short Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error about password length\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('Password');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"test{{$randomInt}}@example.com\",\n  \"phone\": \"1234567890\",\n  \"password\": \"123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 6 - Setup Duplicate User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User created or exists\", function () {",
+									"    pm.expect([201, 409]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Duplicate\",\n  \"last_name\": \"User\",\n  \"email\": \"duplicate@example.com\",\n  \"phone\": \"0000000001\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 7 - Create User Duplicate Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"pm.test(\"Error about duplicate email\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('Email already exists');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Another\",\n  \"last_name\": \"User\",\n  \"email\": \"duplicate@example.com\",\n  \"phone\": \"9999999999\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 8 - Create User Empty First Name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error about name or required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.satisfy(function(msg) {",
+									"        return msg.toLowerCase().includes('first') || msg.includes('required');",
+									"    });",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"\",\n  \"last_name\": \"Doe\",\n  \"email\": \"test{{$randomInt}}@example.com\",\n  \"phone\": \"1234567890\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 9 - Create User Empty Phone",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error about phone\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('phone');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"test{{$randomInt}}@example.com\",\n  \"phone\": \"\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 10 - Create User Long Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test(\"Error about email\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('email');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"verylongemailaddressthatexceedsthemaximumlengthallowedfortheemailfieldinthedat abaseschemaandshouldfailvalidation@example.com\",\n  \"phone\": \"1234567890\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 11 - Get All Users Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response has success true\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"pm.test(\"Users array is returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.data.length).to.be.at.least(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Test 12 - Create User Invalid Field Type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": 12345,\n  \"last_name\": \"Doe\",\n  \"email\": \"test{{$randomInt}}@example.com\",\n  \"phone\": \"1234567890\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5001/api/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5001",
+							"path": ["api", "users"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Product APIs (14 tests)",
+			"item": [
+				{
+					"name": "Test 13 - Create Product Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 201', function () { pm.response.to.have.status(201); });", "pm.test('Product ID saved', function () { var jsonData = pm.response.json(); pm.expect(jsonData.data).to.have.property('id'); pm.collectionVariables.set('productId', jsonData.data.id); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Laptop {{$randomInt}}\",\n  \"description\": \"High performance laptop\",\n  \"price\": 999.99,\n  \"stock_quantity\": 50,\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 14 - Create Product Missing Name",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about required fields', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('required'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"description\": \"Test\",\n  \"price\": 99.99,\n  \"stock_quantity\": 10\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 15 - Create Product Missing Price",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Test Product\",\n  \"description\": \"Test\",\n  \"stock_quantity\": 10\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 16 - Create Product Missing Stock",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Test Product\",\n  \"description\": \"Test\",\n  \"price\": 99.99\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 17 - Create Product Zero Stock",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about stock', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Stock quantity must be greater than 0'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Zero Stock\",\n  \"price\": 50,\n  \"stock_quantity\": 0\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 18 - Create Product Negative Price",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about price', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Price'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Negative Price\",\n  \"price\": -50,\n  \"stock_quantity\": 10\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 19 - Create Product Stock Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about exceeding maximum', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('exceeds maximum'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Huge Stock\",\n  \"price\": 50,\n  \"stock_quantity\": \"999999999999999999999\"\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 20 - Create Product Price Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about price exceeding', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Price exceeds'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Expensive Product\",\n  \"price\": 999999999999,\n  \"stock_quantity\": 10\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 21 - Create Product Invalid Status",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about status', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('status'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Test Product\",\n  \"price\": 50,\n  \"stock_quantity\": 10,\n  \"status\": \"INVALID\"\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 22 - Create Product Name Too Long",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about name length', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('name'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"A very long product name that exceeds the maximum allowed character limit for product names in the database schema and should fail validation testing to ensure proper error handling works correctly in the application with appropriate error messages returned to users\",\n  \"price\": 50,\n  \"stock_quantity\": 10\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 23 - Create Product Empty Name",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"\",\n  \"price\": 50,\n  \"stock_quantity\": 10\n}"}, "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 24 - Get All Products Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });", "pm.test('Products array returned', function () { var jsonData = pm.response.json(); pm.expect(jsonData.data).to.be.an('array'); });"]}}],
+					"request": {"method": "GET", "header": [], "url": {"raw": "http://localhost:5001/api/products", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"]}}
+				},
+				{
+					"name": "Test 25 - Get Products With Status Filter",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"]}}],
+					"request": {"method": "GET", "header": [], "url": {"raw": "http://localhost:5001/api/products?status=ACTIVE", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"], "query": [{"key": "status", "value": "ACTIVE"}]}}
+				},
+				{
+					"name": "Test 26 - Get Products Invalid Status Filter",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "GET", "header": [], "url": {"raw": "http://localhost:5001/api/products?status=INVALID", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "products"], "query": [{"key": "status", "value": "INVALID"}]}}
+				}
+			]
+		},
+		{
+			"name": "3. Cart APIs (8 tests)",
+			"item": [
+				{
+					"name": "Test 27 - Create Cart Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 201', function () { pm.response.to.have.status(201); });", "pm.test('Cart ID saved', function () { var jsonData = pm.response.json(); pm.expect(jsonData.data).to.have.property('id'); pm.collectionVariables.set('cartId', jsonData.data.id); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"{{userId}}\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 28 - Create Cart Missing User ID",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about user ID', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('User ID'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 29 - Create Cart User ID Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about exceeding maximum', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('exceeds maximum'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"999999999999999999999\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 30 - Create Cart Invalid User ID Format",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about format', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('format'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"abc123\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 31 - Create Cart User Not Found",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 404', function () { pm.response.to.have.status(404); });", "pm.test('User not found message', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('User not found'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"999999\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 32 - Create Cart Negative User ID",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"-5\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 33 - Create Cart Zero User ID",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"0\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				},
+				{
+					"name": "Test 34 - Create Cart Decimal User ID",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"1.5\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/create", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "create"]}}
+				}
+			]
+		},
+		{
+			"name": "4. Cart Item APIs (12 tests)",
+			"item": [
+				{
+					"name": "Test 35 - Add Item to Cart Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });", "pm.test('Item added successfully', function () { var jsonData = pm.response.json(); pm.expect(jsonData.success).to.eql(true); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 36 - Add Item Missing Cart ID",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 37 - Add Item Missing Product ID",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 38 - Add Item Missing Quantity",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 39 - Add Item Cart ID Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about cart ID', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Cart ID exceeds'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"999999999999999999999\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 40 - Add Item Product ID Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about product ID', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Product ID exceeds'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"999999999999999999999\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 41 - Add Item Quantity Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about quantity', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Quantity exceeds'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": \"999999999999999999999\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 42 - Add Item Invalid Quantity Format",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about quantity format', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('quantity'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": \"abc\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 43 - Add Item Zero Quantity",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 0\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 44 - Add Item Negative Quantity",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": -5\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 45 - Add Item Cart Not Found",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 404', function () { pm.response.to.have.status(404); });", "pm.test('Cart not found', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Cart not found'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"999999\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 46 - Add Item Product Not Found",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 404', function () { pm.response.to.have.status(404); });", "pm.test('Product not found', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Product not found'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"999999\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				}
+			]
+		},
+		{
+			"name": "5. Remove Item & Checkout & Delete (8 tests)",
+			"item": [
+				{
+					"name": "Test 47 - Remove Item from Cart Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });", "pm.test('Item removed successfully', function () { var jsonData = pm.response.json(); pm.expect(jsonData.success).to.eql(true); });"]}}],
+					"request": {"method": "DELETE", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/remove-item/{{productId}}", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "remove-item", "{{productId}}"]}}
+				},
+				{
+					"name": "Test 48 - Remove Item Product ID Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about product ID', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Product ID exceeds'); });"]}}],
+					"request": {"method": "DELETE", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/remove-item/999999999999999999", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "remove-item", "999999999999999999"]}}
+				},
+				{
+					"name": "Test 49 - Add Item Again for Checkout",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}"}, "url": {"raw": "http://localhost:5001/api/cart/add-item", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "add-item"]}}
+				},
+				{
+					"name": "Test 50 - Checkout Cart Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });", "pm.test('Checkout completed', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Checkout completed'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"{{cartId}}\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/checkout", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "checkout"]}}
+				},
+				{
+					"name": "Test 51 - Checkout Cart ID Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about cart ID', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Cart ID exceeds'); });"]}}],
+					"request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"999999999999999999999\"\n}"}, "url": {"raw": "http://localhost:5001/api/cart/checkout", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "checkout"]}}
+				},
+				{
+					"name": "Test 52 - Delete Cart Success",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 200', function () { pm.response.to.have.status(200); });", "pm.test('Cart deleted successfully', function () { var jsonData = pm.response.json(); pm.expect(jsonData.success).to.eql(true); });"]}}],
+					"request": {"method": "DELETE", "header": [], "url": {"raw": "http://localhost:5001/api/cart/{{cartId}}", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "{{cartId}}"]}}
+				},
+				{
+					"name": "Test 53 - Delete Cart ID Exceeds Max",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 400', function () { pm.response.to.have.status(400); });", "pm.test('Error about cart ID', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Cart ID exceeds'); });"]}}],
+					"request": {"method": "DELETE", "header": [], "url": {"raw": "http://localhost:5001/api/cart/999999999999999999999", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "999999999999999999999"]}}
+				},
+				{
+					"name": "Test 54 - Delete Cart Not Found",
+					"event": [{"listen": "test", "script": {"exec": ["pm.test('Status code is 404', function () { pm.response.to.have.status(404); });", "pm.test('Cart not found', function () { var jsonData = pm.response.json(); pm.expect(jsonData.message).to.include('Cart not found'); });"]}}],
+					"request": {"method": "DELETE", "header": [], "url": {"raw": "http://localhost:5001/api/cart/999999", "protocol": "http", "host": ["localhost"], "port": "5001", "path": ["api", "cart", "999999"]}}
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "userId", "value": ""},
+		{"key": "productId", "value": ""},
+		{"key": "cartId", "value": ""}
+	]
+}

@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table
+model User {
+  id         Int      @id @default(autoincrement())
+  first_name String   @db.VarChar(255)
+  last_name  String   @db.VarChar(255)
+  email      String   @unique @db.VarChar(255)
+  phone      String   @db.VarChar(20)
+  password   String   @db.VarChar(255)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  carts Cart[]
+
+  @@map("Users")
+}
+
+// Products table
+model Product {
+  id             Int           @id @default(autoincrement())
+  name           String        @unique @db.VarChar(255)
+  description    String?       @db.Text
+  price          Decimal       @db.Decimal(10, 2)
+  stock_quantity Int           @default(0)
+  status         ProductStatus @default(ACTIVE)
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  // Relations
+  cart_items CartItem[]
+
+  @@map("Products")
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// Carts table
+model Cart {
+  id           Int        @id @default(autoincrement())
+  user_id      Int
+  subtotal     Decimal    @default(0) @db.Decimal(10, 2)
+  total_amount Decimal    @default(0) @db.Decimal(10, 2)
+  status       CartStatus @default(ACTIVE)
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  cart_items CartItem[]
+
+  @@index([user_id])
+  @@map("Carts")
+}
+
+enum CartStatus {
+  ACTIVE
+  CHECKED_OUT
+}
+
+// Cart_Items table (junction table for Many-to-Many relationship)
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  cart_id    Int
+  product_id Int
+  quantity   Int
+  unit_price Decimal  @db.Decimal(10, 2)
+  total      Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now())
+
+  // Relations
+  cart    Cart    @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([cart_id, product_id])
+  @@index([cart_id])
+  @@index([product_id])
+  @@map("Cart_Items")
+}
