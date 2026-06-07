@@ -18,14 +18,16 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "" >> ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          cat > ~/.ssh/config << EOF
+          cat > ~/.ssh/config << 'EOF'
           Host ec2
             HostName ${{ secrets.EC2_HOST }}
             User ${{ secrets.EC2_USER }}
             IdentityFile ~/.ssh/id_rsa
             StrictHostKeyChecking no
           EOF
+          chmod 600 ~/.ssh/config
 
       - name: Deploy to EC2
         env:
