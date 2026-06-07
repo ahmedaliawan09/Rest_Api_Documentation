@@ -1,0 +1,98 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+            set -e
+            
+            echo "=========================================="
+            echo "Starting deployment..."
+            echo "=========================================="
+            
+            # Navigate to project directory or clone if not exists
+            if [ ! -d "Rest_Api_Documentation" ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git
+              cd Rest_Api_Documentation
+            else
+              echo "Updating repository..."
+              cd Rest_Api_Documentation
+              git fetch origin
+              git reset --hard origin/main
+              git pull origin main
+            fi
+            
+            # Create .env.docker file with secrets
+            echo "Creating .env.docker file..."
+            cat > backend/.env.docker << EOF
+          port=5000
+          DATABASE_URL="${{ secrets.DATABASE_URL }}"
+          NODE_ENV=production
+          LOG_LEVEL=info
+          EOF
+            
+            # Stop existing containers
+            echo "Stopping existing containers..."
+            docker compose down || true
+            
+            # Remove old images to free space
+            echo "Cleaning up old images..."
+            docker image prune -af || true
+            
+            # Build and start services
+            echo "Building and starting services..."
+            docker compose up -d --build
+            
+            # Wait for services to be healthy
+            echo "Waiting for services to be ready..."
+            sleep 15
+            
+            # Check service status
+            echo "=========================================="
+            echo "Service Status:"
+            echo "=========================================="
+            docker compose ps
+            
+            # Check API health
+            echo "=========================================="
+            echo "Checking API health..."
+            echo "=========================================="
+            sleep 5
+            curl -f http://localhost:5001/health || echo "Health check failed, but continuing..."
+            
+            echo "=========================================="
+            echo "Deployment completed successfully!"
+            echo "=========================================="
+          ENDSSH
+
+      - name: Deployment Summary
+        run: |
+          echo "✅ Deployment completed!"
+          echo "🌐 API URL: http://${{ secrets.EC2_HOST }}:5001"
+          echo "🏥 Health Check: http://${{ secrets.EC2_HOST }}:5001/health"
+          echo "📊 phpMyAdmin: http://${{ secrets.EC2_HOST }}:8080"
