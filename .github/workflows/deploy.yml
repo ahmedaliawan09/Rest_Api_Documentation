@@ -56,7 +56,7 @@ jobs:
             echo "Creating .env.docker file..."
             cat > backend/.env.docker << EOF
           port=5000
-          DATABASE_URL="${{ secrets.DATABASE_URL }}"
+          DATABASE_URL="${{ secrets.DATABASE_URL_RDS }}"
           NODE_ENV=production
           LOG_LEVEL=info
           EOF
