@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Blue-Green Deployment with ALB
 
 on:
   push:
@@ -7,37 +7,75 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  blue-green-deploy:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Detect Active Environment
+        id: detect
+        run: |
+          echo "=========================================="
+          echo "Detecting current active environment..."
+          echo "=========================================="
+          
+          # Get current target group from ALB listener
+          CURRENT_TG=$(aws elbv2 describe-listeners \
+            --listener-arns ${{ secrets.ALB_LISTENER_ARN }} \
+            --query 'Listeners[0].DefaultActions[0].TargetGroupArn' \
+            --output text)
+          
+          echo "Current Target Group: $CURRENT_TG"
+          
+          # Determine active and inactive environments
+          if [[ "$CURRENT_TG" == "${{ secrets.BLUE_TARGET_GROUP_ARN }}" ]]; then
+            echo "ACTIVE=BLUE" >> $GITHUB_OUTPUT
+            echo "INACTIVE=GREEN" >> $GITHUB_OUTPUT
+            echo "ACTIVE_HOST=${{ secrets.BLUE_EC2_HOST }}" >> $GITHUB_OUTPUT
+            echo "INACTIVE_HOST=${{ secrets.GREEN_EC2_HOST }}" >> $GITHUB_OUTPUT
+            echo "INACTIVE_TG_ARN=${{ secrets.GREEN_TARGET_GROUP_ARN }}" >> $GITHUB_OUTPUT
+            echo "🔵 Blue is currently ACTIVE"
+            echo "🟢 Green is INACTIVE - will deploy here"
+          else
+            echo "ACTIVE=GREEN" >> $GITHUB_OUTPUT
+            echo "INACTIVE=BLUE" >> $GITHUB_OUTPUT
+            echo "ACTIVE_HOST=${{ secrets.GREEN_EC2_HOST }}" >> $GITHUB_OUTPUT
+            echo "INACTIVE_HOST=${{ secrets.BLUE_EC2_HOST }}" >> $GITHUB_OUTPUT
+            echo "INACTIVE_TG_ARN=${{ secrets.BLUE_TARGET_GROUP_ARN }}" >> $GITHUB_OUTPUT
+            echo "🟢 Green is currently ACTIVE"
+            echo "🔵 Blue is INACTIVE - will deploy here"
+          fi
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Test SSH Connection
-        continue-on-error: true
-        run: |
-          echo "Testing SSH connection to ${{ secrets.EC2_HOST }}..."
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"
-
-      - name: Deploy to EC2
+      - name: Deploy to Inactive Environment
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
+          DEPLOY_HOST: ${{ steps.detect.outputs.INACTIVE_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           DATABASE_URL: ${{ secrets.DATABASE_URL_RDS }}
+          ENVIRONMENT: ${{ steps.detect.outputs.INACTIVE }}
         timeout-minutes: 10
         run: |
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+          echo "=========================================="
+          echo "Deploying to $ENVIRONMENT environment ($DEPLOY_HOST)..."
+          echo "=========================================="
+          
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 $EC2_USER@$DEPLOY_HOST << 'ENDSSH'
             set -e
             
-            echo "=========================================="
-            echo "Starting deployment..."
-            echo "=========================================="
+            echo "Starting deployment on $(hostname)..."
             
             # Navigate to project directory or clone if not exists
             if [ ! -d "Rest_Api_Documentation" ]; then
@@ -52,11 +90,11 @@ jobs:
               git pull origin main
             fi
             
-            # Create .env.docker file with secrets
+            # Create .env.docker file
             echo "Creating .env.docker file..."
             cat > backend/.env.docker << EOF
           port=5000
-          DATABASE_URL="${{ secrets.DATABASE_URL_RDS }}"
+          DATABASE_URL=${{ secrets.DATABASE_URL_RDS }}
           NODE_ENV=production
           LOG_LEVEL=info
           EOF
@@ -75,98 +113,150 @@ jobs:
             
             # Wait for services to be healthy
             echo "Waiting for services to be ready..."
-            sleep 15
+            sleep 20
             
             # Check service status
             echo "=========================================="
             echo "Service Status:"
-            echo "=========================================="
             docker compose ps
+            echo "=========================================="
             
             # Check API health
-            echo "=========================================="
             echo "Checking API health..."
-            echo "=========================================="
-            sleep 5
-            curl -f http://localhost:5001/health || echo "Health check failed, but continuing..."
+            for i in {1..10}; do
+              if curl -f http://localhost:5001/health > /dev/null 2>&1; then
+                echo "✅ API is healthy!"
+                break
+              fi
+              echo "Waiting for API... ($i/10)"
+              sleep 3
+            done
             
-            echo "=========================================="
-            echo "Deployment completed successfully!"
-            echo "=========================================="
+            echo "Deployment completed on $(hostname)!"
           ENDSSH
 
-      - name: Run Post-Deployment Tests
+      - name: Run Tests on Inactive Environment
+        env:
+          TEST_HOST: ${{ steps.detect.outputs.INACTIVE_HOST }}
+          ENVIRONMENT: ${{ steps.detect.outputs.INACTIVE }}
         run: |
           echo "=========================================="
-          echo "Running Post-Deployment API Tests..."
+          echo "Running tests on $ENVIRONMENT environment..."
           echo "=========================================="
           
-          # Wait for services to stabilize
-          echo "Waiting for services to stabilize..."
           sleep 10
           
           # Test 1: Health Check
-          echo "Test 1: Health Check Endpoint"
-          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" http://${{ secrets.EC2_HOST }}:5001/health)
-          HEALTH_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          echo "Test 1: Health Check"
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$TEST_HOST:5001/health)
           if [ "$HEALTH_CODE" != "200" ]; then
-            echo "❌ Health check failed with status: $HEALTH_CODE"
+            echo "❌ Health check failed"
             exit 1
           fi
           echo "✅ Health check passed"
           
-          # Test 2: Get Users Endpoint
-          echo "Test 2: Get Users Endpoint"
-          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:5001/api/users)
+          # Test 2: Get Users
+          echo "Test 2: Get Users"
+          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$TEST_HOST:5001/api/users)
           if [ "$USERS_CODE" != "200" ]; then
-            echo "❌ Users endpoint failed with status: $USERS_CODE"
+            echo "❌ Users endpoint failed"
             exit 1
           fi
           echo "✅ Users endpoint passed"
           
-          # Test 3: Get Products Endpoint
-          echo "Test 3: Get Products Endpoint"
-          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:5001/api/products)
+          # Test 3: Get Products
+          echo "Test 3: Get Products"
+          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$TEST_HOST:5001/api/products)
           if [ "$PRODUCTS_CODE" != "200" ]; then
-            echo "❌ Products endpoint failed with status: $PRODUCTS_CODE"
+            echo "❌ Products endpoint failed"
             exit 1
           fi
           echo "✅ Products endpoint passed"
           
-          # Test 4: Create User (POST test)
-          echo "Test 4: Create User (POST Test)"
-          CREATE_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://${{ secrets.EC2_HOST }}:5001/api/users \
+          # Test 4: Create User
+          echo "Test 4: Create User"
+          CREATE_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://$TEST_HOST:5001/api/users \
             -H "Content-Type: application/json" \
             -d '{"first_name":"Test","last_name":"User","email":"test-'$(date +%s)'@example.com","phone":"1234567890","password":"test123"}')
           if [ "$CREATE_USER_CODE" != "201" ]; then
-            echo "❌ Create user failed with status: $CREATE_USER_CODE"
+            echo "❌ Create user failed"
             exit 1
           fi
           echo "✅ Create user passed"
           
-          # Test 5: Create Product (POST test)
-          echo "Test 5: Create Product (POST Test)"
-          CREATE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://${{ secrets.EC2_HOST }}:5001/api/products \
+          # Test 5: Create Product
+          echo "Test 5: Create Product"
+          CREATE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://$TEST_HOST:5001/api/products \
             -H "Content-Type: application/json" \
-            -d '{"name":"Test Product '$(date +%s)'","description":"Automated test product","price":99.99,"stock_quantity":10}')
+            -d '{"name":"Test Product '$(date +%s)'","description":"Test","price":99.99,"stock_quantity":10}')
           if [ "$CREATE_PRODUCT_CODE" != "201" ]; then
-            echo "❌ Create product failed with status: $CREATE_PRODUCT_CODE"
+            echo "❌ Create product failed"
             exit 1
           fi
-          echo "✅ Create product passed" 
+          echo "✅ Create product passed"
           
           echo "=========================================="
-          echo "✅ All 5 API tests passed successfully!"
+          echo "✅ All tests passed on $ENVIRONMENT!"
           echo "=========================================="
 
-      - name: Deployment Summary
+      - name: Switch Traffic to New Environment
+        env:
+          NEW_TG_ARN: ${{ steps.detect.outputs.INACTIVE_TG_ARN }}
+          NEW_ENV: ${{ steps.detect.outputs.INACTIVE }}
         run: |
           echo "=========================================="
-          echo "✅ Deployment completed successfully!"
+          echo "Switching traffic to $NEW_ENV environment..."
           echo "=========================================="
-          echo "🌐 API URL: http://${{ secrets.EC2_HOST }}:5001"
-          echo "🏥 Health Check: http://${{ secrets.EC2_HOST }}:5001/health"
-          echo "📊 phpMyAdmin: http://${{ secrets.EC2_HOST }}:8080"
+          
+          # Modify ALB listener to point to new target group
+          aws elbv2 modify-listener \
+            --listener-arn ${{ secrets.ALB_LISTENER_ARN }} \
+            --default-actions Type=forward,TargetGroupArn=$NEW_TG_ARN
+          
+          echo "✅ Traffic switched to $NEW_ENV!"
+          echo "Waiting for traffic to stabilize..."
+          sleep 10
+
+      - name: Verify ALB Traffic Switch
+        env:
+          ALB_URL: http://${{ secrets.ALB_DNS_NAME }}
+          NEW_ENV: ${{ steps.detect.outputs.INACTIVE }}
+        run: |
           echo "=========================================="
-          echo "✅ All automated tests passed"
+          echo "Verifying ALB is routing to $NEW_ENV..."
+          echo "=========================================="
+          
+          for i in {1..5}; do
+            RESPONSE=$(curl -s $ALB_URL/health)
+            echo "Test $i: $RESPONSE"
+            sleep 2
+          done
+          
+          # Final health check via ALB
+          ALB_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/health)
+          if [ "$ALB_HEALTH" != "200" ]; then
+            echo "❌ ALB health check failed!"
+            exit 1
+          fi
+          
+          echo "✅ ALB is successfully routing traffic to $NEW_ENV!"
+
+      - name: Deployment Summary
+        env:
+          PREVIOUS_ENV: ${{ steps.detect.outputs.ACTIVE }}
+          NEW_ENV: ${{ steps.detect.outputs.INACTIVE }}
+          ALB_URL: http://${{ secrets.ALB_DNS_NAME }}
+        run: |
+          echo "=========================================="
+          echo "🎉 Blue-Green Deployment Successful!"
+          echo "=========================================="
+          echo "📊 Deployment Summary:"
+          echo "  • Previous Active: $PREVIOUS_ENV"
+          echo "  • New Active: $NEW_ENV"
+          echo "  • ALB Endpoint: $ALB_URL"
+          echo "  • Health Check: $ALB_URL/health"
+          echo "=========================================="
+          echo "✅ All tests passed"
+          echo "✅ Traffic switched successfully"
+          echo "✅ Zero downtime achieved"
           echo "=========================================="
