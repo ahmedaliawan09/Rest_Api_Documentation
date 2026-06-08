@@ -95,9 +95,78 @@ jobs:
             echo "=========================================="
           ENDSSH
 
+      - name: Run Post-Deployment Tests
+        run: |
+          echo "=========================================="
+          echo "Running Post-Deployment API Tests..."
+          echo "=========================================="
+          
+          # Wait for services to stabilize
+          echo "Waiting for services to stabilize..."
+          sleep 10
+          
+          # Test 1: Health Check
+          echo "Test 1: Health Check Endpoint"
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" http://${{ secrets.EC2_HOST }}:5001/health)
+          HEALTH_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          if [ "$HEALTH_CODE" != "200" ]; then
+            echo "❌ Health check failed with status: $HEALTH_CODE"
+            exit 1
+          fi
+          echo "✅ Health check passed"
+          
+          # Test 2: Get Users Endpoint
+          echo "Test 2: Get Users Endpoint"
+          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:5001/api/users)
+          if [ "$USERS_CODE" != "200" ]; then
+            echo "❌ Users endpoint failed with status: $USERS_CODE"
+            exit 1
+          fi
+          echo "✅ Users endpoint passed"
+          
+          # Test 3: Get Products Endpoint
+          echo "Test 3: Get Products Endpoint"
+          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:5001/api/products)
+          if [ "$PRODUCTS_CODE" != "200" ]; then
+            echo "❌ Products endpoint failed with status: $PRODUCTS_CODE"
+            exit 1
+          fi
+          echo "✅ Products endpoint passed"
+          
+          # Test 4: Create User (POST test)
+          echo "Test 4: Create User (POST Test)"
+          CREATE_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://${{ secrets.EC2_HOST }}:5001/api/users \
+            -H "Content-Type: application/json" \
+            -d '{"first_name":"Test","last_name":"User","email":"test-'$(date +%s)'@example.com","phone":"1234567890","password":"test123"}')
+          if [ "$CREATE_USER_CODE" != "201" ]; then
+            echo "❌ Create user failed with status: $CREATE_USER_CODE"
+            exit 1
+          fi
+          echo "✅ Create user passed"
+          
+          # Test 5: Create Product (POST test)
+          echo "Test 5: Create Product (POST Test)"
+          CREATE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://${{ secrets.EC2_HOST }}:5001/api/products \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Test Product '$(date +%s)'","description":"Automated test product","price":99.99,"stock_quantity":10}')
+          if [ "$CREATE_PRODUCT_CODE" != "201" ]; then
+            echo "❌ Create product failed with status: $CREATE_PRODUCT_CODE"
+            exit 1
+          fi
+          echo "✅ Create product passed"
+          
+          echo "=========================================="
+          echo "✅ All 5 API tests passed successfully!"
+          echo "=========================================="
+
       - name: Deployment Summary
         run: |
-          echo "✅ Deployment completed!"
+          echo "=========================================="
+          echo "✅ Deployment completed successfully!"
+          echo "=========================================="
           echo "🌐 API URL: http://${{ secrets.EC2_HOST }}:5001"
           echo "🏥 Health Check: http://${{ secrets.EC2_HOST }}:5001/health"
           echo "📊 phpMyAdmin: http://${{ secrets.EC2_HOST }}:8080"
+          echo "=========================================="
+          echo "✅ All automated tests passed"
+          echo "=========================================="
