@@ -153,7 +153,7 @@ jobs:
             echo "❌ Create product failed with status: $CREATE_PRODUCT_CODE"
             exit 1
           fi
-          echo "✅ Create product passed"
+          echo "✅ Create product passed" 
           
           echo "=========================================="
           echo "✅ All 5 API tests passed successfully!"
