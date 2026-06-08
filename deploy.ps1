@@ -6,7 +6,7 @@ Write-Host "Starting Deployment to EC2..." -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 # EC2 Details
-$EC2_IP = "13.53.105.144"
+$EC2_IP = "16.171.170.97"
 $SSH_KEY = "C:\Users\Ahmed Ali\.ssh\cart-api-key.pem"
 
 Write-Host "Connecting to EC2: $EC2_IP" -ForegroundColor Yellow
