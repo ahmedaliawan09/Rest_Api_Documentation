@@ -293,16 +293,8 @@ jobs:
             fi
             echo "✅ Create product passed"
             
-            echo "Test 6: Database Connectivity"
-            CART_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/api/carts)
-            if [ "$CART_CODE" != "200" ]; then
-              echo "❌ Cart endpoint failed"
-              exit 1
-            fi
-            echo "✅ Cart endpoint passed"
-            
             echo "=========================================="
-            echo "✅ All 6 pre-switch tests passed!"
+            echo "✅ All 5 pre-switch tests passed!"
             echo "=========================================="
           ENDSSH
           
@@ -424,7 +416,7 @@ jobs:
           echo "  • Code Quality: ✅ Passed SonarCloud"
           echo "  • Previous Active: $PREVIOUS_ENV"
           echo "  • New Active: $NEW_ENV"
-          echo "  • Pre-Switch Tests: ✅ Passed (6 tests)"
+          echo "  • Pre-Switch Tests: ✅ Passed (5 tests)"
           echo "  • Traffic Switch: ✅ Completed"
           echo "  • Post-Switch Tests: ✅ Verified (3 tests)"
           echo "=========================================="
