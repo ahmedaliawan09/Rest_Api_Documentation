@@ -16,10 +16,10 @@ describe('Product Service Unit Tests', () => {
 
     it('should have required product properties', () => {
       const product = mockProducts[0];
-      expect(product).toHaveProperty('id');
-      expect(product).toHaveProperty('name');
-      expect(product).toHaveProperty('price');
-      expect(product).toHaveProperty('stock_quantity');
+      expect(product.id).toBeDefined();
+      expect(product.name).toBeDefined();
+      expect(product.price).toBeDefined();
+      expect(product.stock_quantity).toBeDefined();
     });
   });
 
@@ -40,20 +40,20 @@ describe('Product Service Unit Tests', () => {
         stock_quantity: 20,
       };
 
-      expect(productData.name).toBeTruthy();
+      expect(productData.name.length).toBeGreaterThan(0);
       expect(productData.price).toBeGreaterThan(0);
       expect(productData.stock_quantity).toBeGreaterThanOrEqual(0);
     });
 
     it('should validate price is a number', () => {
       const price = 99.99;
-      expect(typeof price).toBe('number');
+      expect(Number.isFinite(price)).toBe(true);
       expect(price).toBeGreaterThan(0);
     });
 
     it('should validate stock quantity', () => {
       const stockQuantity = 10;
-      expect(typeof stockQuantity).toBe('number');
+      expect(Number.isInteger(stockQuantity)).toBe(true);
       expect(stockQuantity).toBeGreaterThanOrEqual(0);
     });
   });

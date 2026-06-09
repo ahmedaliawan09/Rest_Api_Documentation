@@ -49,8 +49,8 @@ describe('User Service Unit Tests', () => {
       };
 
       expect(userData.email).toContain('@');
-      expect(userData.first_name).toBeTruthy();
-      expect(userData.last_name).toBeTruthy();
+      expect(userData.first_name.length).toBeGreaterThan(0);
+      expect(userData.last_name.length).toBeGreaterThan(0);
     });
 
     it('should validate email format', () => {
