@@ -1,0 +1,197 @@
+================================================================================
+                    BLUE-GREEN FIX CHEAT SHEET
+================================================================================
+
+PROBLEM: Always deploys to Blue, never switches to Green
+CAUSE: GitHub Secrets have wrong ARN values
+FIX: Update 2 secrets with correct ARNs
+
+================================================================================
+                        SSH COMMAND (Copy-Paste)
+================================================================================
+
+ssh -i "C:\Users\Ahmed Ali\.ssh\cart-api-key.pem" ubuntu@16.171.170.97
+
+Then run:
+
+echo "==========================================" && echo "BLUE_TARGET_GROUP_ARN:" && aws elbv2 describe-target-groups --names "cart-api-blue-tg" --query "TargetGroups[0].TargetGroupArn" --output text && echo "" && echo "GREEN_TARGET_GROUP_ARN:" && aws elbv2 describe-target-groups --names "cart-api-green-tg" --query "TargetGroups[0].TargetGroupArn" --output text && echo "=========================================="
+
+================================================================================
+                        UPDATE GITHUB SECRETS
+================================================================================
+
+URL: https://github.com/ahmedaliawan09/Rest_Api_Documentation/settings/secrets/actions
+
+1. Click "BLUE_TARGET_GROUP_ARN"
+2. Click "Update"  
+3. Paste Blue ARN
+4. Click "Update secret"
+
+5. Click "GREEN_TARGET_GROUP_ARN"
+6. Click "Update"
+7. Paste Green ARN
+8. Click "Update secret"
+
+VERIFY:
+- Blue secret contains "cart-api-blue-tg"
+- Green secret contains "cart-api-green-tg"
+
+================================================================================
+                        TEST THE FIX
+================================================================================
+
+echo "// Test blue-green fix" >> backend/server.js
+git add .
+git commit -m "test: verify blue-green switching"
+git push origin main
+
+WATCH: https://github.com/ahmedaliawan09/Rest_Api_Documentation/actions
+
+================================================================================
+                        SUCCESS INDICATORS
+================================================================================
+
+GitHub Actions "Detect Active Environment" should show:
+
+If Blue active:     "Blue is currently ACTIVE"
+                    "Green is INACTIVE - will deploy here"
+
+If Green active:    "Green is currently ACTIVE"
+                    "Blue is INACTIVE - will deploy here"
+
+After deployment: Check AWS Console -> ALB should point to OTHER environment
+
+================================================================================
+                        ALTERNATING PATTERN
+================================================================================
+
+Deploy 1: Blue active   ->  Deploys to Green  ->  Green active
+Deploy 2: Green active  ->  Deploys to Blue   ->  Blue active
+Deploy 3: Blue active   ->  Deploys to Green  ->  Green active
+
+SUCCESS = Alternating between Blue and Green!
+
+================================================================================
+                        KEY ENDPOINTS
+================================================================================
+
+ALB: http://cart-api-alb-810038360.eu-north-1.elb.amazonaws.com
+Blue EC2: 16.171.170.97
+Green EC2: 16.16.199.217
+RDS: cart-api-db.c906s2gume7d.eu-north-1.rds.amazonaws.com
+
+GitHub Repo: https://github.com/ahmedaliawan09/Rest_Api_Documentation
+GitHub Actions: https://github.com/ahmedaliawan09/Rest_Api_Documentation/actions
+GitHub Secrets: https://github.com/ahmedaliawan09/Rest_Api_Documentation/settings/secrets/actions
+AWS Console: https://eu-north-1.console.aws.amazon.com/ec2
+
+================================================================================
+                        DOCUMENTATION FILES
+================================================================================
+
+START HERE:         START_HERE.md
+QUICK FIX:          QUICK_FIX_GUIDE.txt
+GET ARNS:           GET_ARNS_NOW.md
+COMPLETE FIX:       FIX_BLUE_GREEN_SWITCHING.md
+VISUAL GUIDE:       VISUAL_FLOW.md
+DEMO PREP:          DEMO_PREPARATION_CHECKLIST.md
+INDEX:              FIX_DOCUMENTATION_INDEX.md
+
+================================================================================
+                        TIME ESTIMATE
+================================================================================
+
+Get ARNs:           5 minutes
+Update Secrets:     2 minutes
+Push & Test:        8 minutes
+Verify Alternating: 5 minutes
+---------------------------------
+TOTAL:              ~20 minutes
+
+================================================================================
+                        IMPORTANT NOTES
+================================================================================
+
+DO:
+✓ Update GitHub Secrets
+✓ Test by pushing twice
+✓ Verify alternating
+
+DON'T:
+✗ Modify workflow file (deploy.yml) - it's correct!
+✗ Change any code - config issue only!
+✗ Modify AWS infrastructure
+
+================================================================================
+                        AFTER THE FIX
+================================================================================
+
+You'll have:
+✓ Working blue-green deployment
+✓ Zero-downtime switching
+✓ Alternating environments (Blue -> Green -> Blue)
+✓ Production-grade deployment
+✓ Same strategy as Netflix, Amazon, Facebook
+✓ Demo-ready system!
+
+================================================================================
+                        DEMO HIGHLIGHTS
+================================================================================
+
+1. API with 1M records (sub-second response)
+2. 50+ Postman tests (all passing)
+3. Live deployment (push to GitHub)
+4. Zero downtime (tests pass during deployment)
+5. Environment switching (Blue -> Green -> Blue)
+6. Professional pipeline (tests, quality, automation)
+
+================================================================================
+                        TROUBLESHOOTING
+================================================================================
+
+If still not working:
+1. Double-check ARNs (no typos, exact match)
+2. Verify you clicked "Update secret" button
+3. Push new commit (old deployments use old secrets)
+4. Check GitHub Actions logs for detection message
+
+================================================================================
+                        QUICK REFERENCE
+================================================================================
+
+SSH Key Path:       C:\Users\Ahmed Ali\.ssh\cart-api-key.pem
+Blue EC2 IP:        16.171.170.97
+Green EC2 IP:       16.16.199.217
+ALB DNS:            cart-api-alb-810038360.eu-north-1.elb.amazonaws.com
+ALB Port:           80 (HTTP)
+EC2 Port:           5001 (Direct - blocked by security group)
+RDS Port:           3306
+Database:           cartdb
+RDS User:           admin
+
+Secrets to Update:
+1. BLUE_TARGET_GROUP_ARN
+2. GREEN_TARGET_GROUP_ARN
+
+Commands:
+- SSH:              ssh -i <key> ubuntu@<ip>
+- Docker logs:      docker logs cart_api --tail 50
+- Docker status:    docker compose ps
+- Git push:         git push origin main
+
+================================================================================
+                        YOU'RE READY! 🚀
+================================================================================
+
+1. SSH to get ARNs (5 min)
+2. Update secrets (2 min)
+3. Push to test (8 min)
+4. Verify working (5 min)
+5. Celebrate! 🎉
+
+Document created: June 9, 2026
+Issue: Blue-green not switching
+Solution: Update GitHub Secrets
+Time to fix: 20 minutes
+
+================================================================================
