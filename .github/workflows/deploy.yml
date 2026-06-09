@@ -29,6 +29,7 @@ jobs:
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.sources=backend
             -Dsonar.exclusions=**/node_modules/**,**/prisma/migrations/**
+            -Dsonar.qualitygate.wait=false
       
       - name: Quality Gate Check
         run: |
