@@ -25,5 +25,5 @@ process.on('uncaughtException', (err) => {
         stack: err.stack
     });
     console.log('Uncaught Exception! Shutting down...');
-    process.exit(1);
+    process.exit(1);   
 });
