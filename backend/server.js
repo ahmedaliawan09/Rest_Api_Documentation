@@ -21,7 +21,7 @@ process.on('unhandledRejection', (err) => {
  
 process.on('uncaughtException', (err) => {
     logger.error('UNCAUGHT EXCEPTION', {
-        error: err.message,
+        error: err.message, 
         stack: err.stack
     });
     console.log('Uncaught Exception! Shutting down...');
