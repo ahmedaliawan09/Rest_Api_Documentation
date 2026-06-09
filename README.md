@@ -12,6 +12,7 @@ A secure RESTful API for e-commerce cart management built with Node.js, Express,
 - **Docker Support**: Fully containerized with Docker Compose
 - **Database**: MySQL with Prisma ORM
 - **54 Test Cases**: Comprehensive Postman test suite
+- **🎯 Professional Blue-Green Deployment**: Zero-downtime deployments with pre-switch testing
 
 ## 📋 Prerequisites
 
@@ -169,6 +170,35 @@ Logs are stored in `backend/logs/`:
 | API | 5001 | Node.js REST API |
 | MySQL | 3306 | Database |
 | phpMyAdmin | 8080 | Database management UI |
+
+## 🚀 Production Deployment
+
+This project uses **professional blue-green deployment** with AWS Application Load Balancer:
+
+- ✅ **Zero downtime** - Users never experience interruptions
+- ✅ **Zero risk** - Tests run BEFORE traffic switch
+- ✅ **Automatic rollback** - Failed deployments don't affect users
+- ✅ **SonarCloud integration** - Code quality checks on every deployment
+- ✅ **Industry standard** - Used by Netflix, Amazon, Facebook
+
+### Live Deployment
+- **Production URL**: `http://cart-api-alb-810038360.eu-north-1.elb.amazonaws.com`
+- **Health Check**: `http://cart-api-alb-810038360.eu-north-1.elb.amazonaws.com/health`
+
+### Architecture
+- **Load Balancer**: AWS Application Load Balancer (ALB)
+- **Compute**: 2x EC2 t3.small instances (Blue & Green)
+- **Database**: AWS RDS MySQL db.t4g.micro
+- **CI/CD**: GitHub Actions with automated testing
+- **Region**: eu-north-1 (Stockholm)
+
+📖 **[Complete Deployment Documentation](./DEPLOYMENT_STRATEGY.md)** - Detailed guide on the professional deployment strategy
+
+### Quick Deployment Info
+- Push to `main` branch triggers automatic deployment
+- Pre-switch testing ensures no bugs reach users
+- Automatic rollback if tests fail
+- Complete deployment history in GitHub Actions
 
 ## 🔧 Tech Stack
 
