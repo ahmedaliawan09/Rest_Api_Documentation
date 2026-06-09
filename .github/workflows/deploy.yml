@@ -150,71 +150,6 @@ jobs:
             echo "Deployment completed on $(hostname)!"
           ENDSSH
 
-      - name: Run Tests on Inactive Environment
-        env:
-          TEST_HOST: ${{ steps.detect.outputs.INACTIVE_HOST }}
-          ENVIRONMENT: ${{ steps.detect.outputs.INACTIVE }}
-        run: |
-          echo "=========================================="
-          echo "Running tests on $ENVIRONMENT environment..."
-          echo "=========================================="
-          
-          # Wait for services to fully stabilize
-          sleep 30
-          
-          # Test 1: Health Check
-          echo "Test 1: Health Check"
-          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$TEST_HOST:5001/health)
-          if [ "$HEALTH_CODE" != "200" ]; then
-            echo "❌ Health check failed"
-            exit 1
-          fi
-          echo "✅ Health check passed"
-          
-          # Test 2: Get Users
-          echo "Test 2: Get Users"
-          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$TEST_HOST:5001/api/users)
-          if [ "$USERS_CODE" != "200" ]; then
-            echo "❌ Users endpoint failed"
-            exit 1
-          fi
-          echo "✅ Users endpoint passed"
-          
-          # Test 3: Get Products
-          echo "Test 3: Get Products"
-          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$TEST_HOST:5001/api/products)
-          if [ "$PRODUCTS_CODE" != "200" ]; then
-            echo "❌ Products endpoint failed"
-            exit 1
-          fi
-          echo "✅ Products endpoint passed"
-          
-          # Test 4: Create User
-          echo "Test 4: Create User"
-          CREATE_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://$TEST_HOST:5001/api/users \
-            -H "Content-Type: application/json" \
-            -d '{"first_name":"Test","last_name":"User","email":"test-'$(date +%s)'@example.com","phone":"1234567890","password":"test123"}')
-          if [ "$CREATE_USER_CODE" != "201" ]; then
-            echo "❌ Create user failed"
-            exit 1
-          fi
-          echo "✅ Create user passed"
-          
-          # Test 5: Create Product
-          echo "Test 5: Create Product"
-          CREATE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://$TEST_HOST:5001/api/products \
-            -H "Content-Type: application/json" \
-            -d '{"name":"Test Product '$(date +%s)'","description":"Test","price":99.99,"stock_quantity":10}')
-          if [ "$CREATE_PRODUCT_CODE" != "201" ]; then
-            echo "❌ Create product failed"
-            exit 1
-          fi
-          echo "✅ Create product passed"
-          
-          echo "=========================================="
-          echo "✅ All tests passed on $ENVIRONMENT!"
-          echo "=========================================="
-
       - name: Switch Traffic to New Environment
         env:
           NEW_TG_ARN: ${{ steps.detect.outputs.INACTIVE_TG_ARN }}
@@ -231,29 +166,70 @@ jobs:
           echo "Waiting for traffic to stabilize..."
           sleep 10
 
-      - name: Verify ALB Traffic Switch
+      - name: Verify ALB and Run Comprehensive Tests
         env:
           ALB_URL: http://${{ secrets.ALB_DNS_NAME }}
           NEW_ENV: ${{ steps.detect.outputs.INACTIVE }}
         run: |
           echo "=========================================="
-          echo "Verifying ALB is routing to $NEW_ENV..."
+          echo "Verifying ALB routing and running tests..."
           echo "=========================================="
           
-          for i in {1..5}; do
-            RESPONSE=$(curl -s $ALB_URL/health)
-            echo "Test $i: $RESPONSE"
-            sleep 2
-          done
+          sleep 10
           
-          # Final health check via ALB
-          ALB_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/health)
-          if [ "$ALB_HEALTH" != "200" ]; then
-            echo "❌ ALB health check failed!"
+          # Test 1: Health Check via ALB
+          echo "Test 1: Health Check via ALB"
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/health)
+          if [ "$HEALTH_CODE" != "200" ]; then
+            echo "❌ ALB health check failed"
             exit 1
           fi
+          echo "✅ Health check passed"
           
-          echo "✅ ALB is successfully routing traffic to $NEW_ENV!"
+          # Test 2: Get Users via ALB
+          echo "Test 2: Get Users via ALB"
+          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/api/users)
+          if [ "$USERS_CODE" != "200" ]; then
+            echo "❌ Users endpoint failed"
+            exit 1
+          fi
+          echo "✅ Users endpoint passed"
+          
+          # Test 3: Get Products via ALB
+          echo "Test 3: Get Products via ALB"
+          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/api/products)
+          if [ "$PRODUCTS_CODE" != "200" ]; then
+            echo "❌ Products endpoint failed"
+            exit 1
+          fi
+          echo "✅ Products endpoint passed"
+          
+          # Test 4: Create User via ALB
+          echo "Test 4: Create User via ALB"
+          CREATE_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $ALB_URL/api/users \
+            -H "Content-Type: application/json" \
+            -d '{"first_name":"Test","last_name":"User","email":"test-'$(date +%s)'@example.com","phone":"1234567890","password":"test123"}')
+          if [ "$CREATE_USER_CODE" != "201" ]; then
+            echo "❌ Create user failed"
+            exit 1
+          fi
+          echo "✅ Create user passed"
+          
+          # Test 5: Create Product via ALB
+          echo "Test 5: Create Product via ALB"
+          CREATE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $ALB_URL/api/products \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Test Product '$(date +%s)'","description":"Test","price":99.99,"stock_quantity":10}')
+          if [ "$CREATE_PRODUCT_CODE" != "201" ]; then
+            echo "❌ Create product failed"
+            exit 1
+          fi
+          echo "✅ Create product passed"
+          
+          echo "=========================================="
+          echo "✅ All 5 tests passed via ALB!"
+          echo "✅ ALB is successfully routing to $NEW_ENV!"
+          echo "=========================================="
 
       - name: Deployment Summary
         env:
