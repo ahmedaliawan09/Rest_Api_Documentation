@@ -131,14 +131,19 @@ jobs:
             docker compose ps
             echo "=========================================="
             
-            # Check API health
+            # Check API health with retries
             echo "Checking API health..."
-            for i in {1..10}; do
+            for i in {1..30}; do
               if curl -f http://localhost:5001/health > /dev/null 2>&1; then
                 echo "✅ API is healthy!"
                 break
               fi
-              echo "Waiting for API... ($i/10)"
+              if [ $i -eq 30 ]; then
+                echo "❌ API failed to become healthy after 90 seconds"
+                docker compose logs --tail 50
+                exit 1
+              fi
+              echo "Waiting for API... ($i/30)"
               sleep 3
             done
             
@@ -154,7 +159,8 @@ jobs:
           echo "Running tests on $ENVIRONMENT environment..."
           echo "=========================================="
           
-          sleep 10
+          # Wait for services to fully stabilize
+          sleep 30
           
           # Test 1: Health Check
           echo "Test 1: Health Check"
