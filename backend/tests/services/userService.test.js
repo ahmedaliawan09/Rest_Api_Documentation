@@ -1,5 +1,5 @@
 // Unit tests for User Service
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 // Mock data
 const mockUsers = [
