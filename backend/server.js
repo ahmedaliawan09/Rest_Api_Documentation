@@ -13,7 +13,7 @@ process.on('unhandledRejection', (err) => {
     logger.error('UNHANDLED REJECTION', {
         error: err.message,
         stack: err.stack
-    });
+    }); 
     console.log('Unhandled Rejection! Shutting down...');
     process.exit(1);
 });
