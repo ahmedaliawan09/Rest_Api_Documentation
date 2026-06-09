@@ -3,16 +3,16 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
-// Custom log format with full details
+
 const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => {
     let log = `${timestamp} [${level}]: ${message}`;
     
-    // Add metadata if exists
+     
     if (Object.keys(metadata).length > 0) {
         log += ` | ${JSON.stringify(metadata, null, 2)}`;
     }
     
-    // Add stack trace for errors
+    
     if (stack) {
         log += `\n${stack}`;
     }
@@ -20,7 +20,7 @@ const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => 
     return log;
 });
 
-// Transport for all logs
+
 const allLogsTransport = new DailyRotateFile({
     filename: 'logs/all-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
@@ -29,7 +29,7 @@ const allLogsTransport = new DailyRotateFile({
     level: 'info'
 });
 
-// Transport for error logs only
+
 const errorLogsTransport = new DailyRotateFile({
     filename: 'logs/error-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
@@ -38,7 +38,7 @@ const errorLogsTransport = new DailyRotateFile({
     level: 'error'
 });
 
-// Transport for HTTP request logs
+
 const httpLogsTransport = new DailyRotateFile({
     filename: 'logs/http-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
@@ -47,7 +47,7 @@ const httpLogsTransport = new DailyRotateFile({
     level: 'http'
 });
 
-// Create logger instance
+
 const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || 'info',
     format: combine(
@@ -62,15 +62,16 @@ const logger = winston.createLogger({
     ]
 });
 
-// Console logging for development
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: combine(
-            colorize(),
-            timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            logFormat
-        )
-    }));
-}
+
+// ALWAYS add console logger (needed for CloudWatch to capture logs)
+// CloudWatch captures container stdout/stderr, not log files inside containers
+logger.add(new winston.transports.Console({
+    format: combine(
+        colorize(),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        logFormat
+    ),
+    level: 'info' // Log info, warn, error to console for CloudWatch
+}));
 
 export default logger;
