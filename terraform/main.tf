@@ -8,14 +8,14 @@ terraform {
     }
   }
 
-  # S3 Backend - Will migrate after local apply
-  # backend "s3" {
-  #   bucket         = "cart-api-terraform-state-prod"
-  #   key            = "infrastructure/terraform.tfstate"
-  #   region         = "eu-north-1"
-  #   encrypt        = true
-  #   dynamodb_table = "cart-api-terraform-locks"
-  # }
+  # S3 Backend for remote state storage
+  backend "s3" {
+    bucket         = "cart-api-terraform-state-prod"
+    key            = "infrastructure/terraform.tfstate"
+    region         = "eu-north-1"
+    encrypt        = true
+    dynamodb_table = "cart-api-terraform-locks"
+  }
 }
 
 provider "aws" {

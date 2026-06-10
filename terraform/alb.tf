@@ -76,6 +76,7 @@ resource "aws_lb_target_group" "green" {
 }
 
 # ALB Listener (Port 80)
+# Note: GitHub Actions manages blue-green switching dynamically
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
@@ -88,5 +89,12 @@ resource "aws_lb_listener" "http" {
 
   tags = {
     Name = "${var.project_name}-http-listener"
+  }
+
+  # Ignore target group changes - managed by CI/CD
+  lifecycle {
+    ignore_changes = [
+      default_action[0].target_group_arn
+    ]
   }
 }
