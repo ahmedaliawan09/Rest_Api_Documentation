@@ -16,6 +16,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "eu-north-1"
+        awslogs-group: "/aws/ec2/cart-api"
+        awslogs-stream: "{{.ID}}"
+        awslogs-create-group: "true"
 
 # MySQL removed - now using AWS RDS
 # phpMyAdmin removed - use MySQL Workbench or AWS RDS Console to manage database
