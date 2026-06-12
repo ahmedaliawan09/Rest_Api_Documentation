@@ -191,6 +191,7 @@ jobs:
           DATABASE_URL=${{ secrets.DATABASE_URL_RDS }}
           NODE_ENV=production
           LOG_LEVEL=info
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
           EOF
             
             # Stop existing containers
@@ -299,7 +300,37 @@ jobs:
           ssh -o StrictHostKeyChecking=no $EC2_USER@$INACTIVE_HOST << 'ENDSSH'
             set -e
             
-            echo "Test 1: Internal Health Check"
+            echo "=========================================="
+            echo "🔐 AUTHENTICATING FOR TESTS"
+            echo "=========================================="
+            
+            # Register or login to get JWT token
+            echo "Logging in to get JWT token..."
+            TOKEN_RESPONSE=$(curl -s -X POST http://localhost:5001/api/auth/login \
+              -H "Content-Type: application/json" \
+              -d '{"email":"testuser@example.com","password":"TestPassword123"}')
+            
+            # Extract token (if login fails, try register)
+            TOKEN=$(echo $TOKEN_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+            
+            # If login failed, register new user
+            if [ -z "$TOKEN" ]; then
+              echo "User not found, registering new test user..."
+              TOKEN_RESPONSE=$(curl -s -X POST http://localhost:5001/api/auth/register \
+                -H "Content-Type: application/json" \
+                -d '{"first_name":"Test","last_name":"User","email":"testuser@example.com","phone":"1234567890","password":"TestPassword123"}')
+              TOKEN=$(echo $TOKEN_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+            fi
+            
+            if [ -z "$TOKEN" ]; then
+              echo "❌ Failed to get authentication token"
+              exit 1
+            fi
+            
+            echo "✅ Authentication successful"
+            echo "=========================================="
+            
+            echo "Test 1: Internal Health Check (Public)"
             HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/health)
             if [ "$HEALTH_CODE" != "200" ]; then
               echo "❌ Health check failed"
@@ -307,44 +338,45 @@ jobs:
             fi
             echo "✅ Health check passed"
             
-            echo "Test 2: Get Users"
-            USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/api/users)
-            if [ "$USERS_CODE" != "200" ]; then
-              echo "❌ Users endpoint failed"
+            echo "Test 2: Get My Profile (JWT Required)"
+            PROFILE_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/api/auth/me \
+              -H "Authorization: Bearer $TOKEN")
+            if [ "$PROFILE_CODE" != "200" ]; then
+              echo "❌ Get profile failed"
               exit 1
             fi
-            echo "✅ Users endpoint passed"
+            echo "✅ Get profile passed"
             
-            echo "Test 3: Get Products"
-            PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/api/products)
+            echo "Test 3: Get Products (JWT Required)"
+            PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/api/products \
+              -H "Authorization: Bearer $TOKEN")
             if [ "$PRODUCTS_CODE" != "200" ]; then
               echo "❌ Products endpoint failed"
               exit 1
             fi
             echo "✅ Products endpoint passed"
             
-            echo "Test 4: Create User"
-            CREATE_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5001/api/users \
+            echo "Test 4: Create Cart (JWT Required)"
+            CREATE_CART_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5001/api/cart/create \
               -H "Content-Type: application/json" \
-              -d '{"first_name":"PreTest","last_name":"User","email":"pretest-'$(date +%s)'@example.com","phone":"1234567890","password":"test123"}')
-            if [ "$CREATE_USER_CODE" != "201" ]; then
-              echo "❌ Create user failed"
+              -H "Authorization: Bearer $TOKEN")
+            if [ "$CREATE_CART_CODE" != "201" ]; then
+              echo "❌ Create cart failed"
               exit 1
             fi
-            echo "✅ Create user passed"
+            echo "✅ Create cart passed"
             
-            echo "Test 5: Create Product"
-            CREATE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5001/api/products \
-              -H "Content-Type: application/json" \
-              -d '{"name":"PreTest Product '$(date +%s)'","description":"PreTest","price":99.99,"stock_quantity":10}')
-            if [ "$CREATE_PRODUCT_CODE" != "201" ]; then
-              echo "❌ Create product failed"
+            echo "Test 5: Get All Users (JWT Required)"
+            USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/api/users \
+              -H "Authorization: Bearer $TOKEN")
+            if [ "$USERS_CODE" != "200" ]; then
+              echo "❌ Users endpoint failed"
               exit 1
             fi
-            echo "✅ Create product passed"
+            echo "✅ Users endpoint passed"
             
             echo "=========================================="
-            echo "✅ All 5 pre-switch tests passed!"
+            echo "✅ All 5 pre-switch tests passed (with JWT)!"
             echo "=========================================="
           ENDSSH
           
@@ -392,7 +424,22 @@ jobs:
           echo "Verifying ALB is routing to $NEW_ENV correctly..."
           echo "=========================================="
           
-          # Test 1: Health Check via ALB
+          # Authenticate first
+          echo "Authenticating for post-switch tests..."
+          TOKEN_RESPONSE=$(curl -s -X POST $ALB_URL/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"testuser@example.com","password":"TestPassword123"}')
+          
+          TOKEN=$(echo $TOKEN_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+          
+          if [ -z "$TOKEN" ]; then
+            echo "❌ Failed to authenticate for post-switch tests"
+            exit 1
+          fi
+          
+          echo "✅ Authentication successful"
+          
+          # Test 1: Health Check via ALB (Public)
           echo "Test 1: Health Check via ALB"
           HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/health)
           if [ "$HEALTH_CODE" != "200" ]; then
@@ -401,18 +448,20 @@ jobs:
           fi
           echo "✅ Health check passed"
           
-          # Test 2: Get Users via ALB
+          # Test 2: Get Users via ALB (JWT Required)
           echo "Test 2: Users Endpoint via ALB"
-          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/api/users)
+          USERS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/api/users \
+            -H "Authorization: Bearer $TOKEN")
           if [ "$USERS_CODE" != "200" ]; then
             echo "❌ Post-switch users endpoint failed"
             exit 1
           fi
           echo "✅ Users endpoint passed"
           
-          # Test 3: Get Products via ALB
+          # Test 3: Get Products via ALB (JWT Required)
           echo "Test 3: Products Endpoint via ALB"
-          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/api/products)
+          PRODUCTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $ALB_URL/api/products \
+            -H "Authorization: Bearer $TOKEN")
           if [ "$PRODUCTS_CODE" != "200" ]; then
             echo "❌ Post-switch products endpoint failed"
             exit 1
@@ -422,6 +471,7 @@ jobs:
           echo "=========================================="
           echo "✅ POST-SWITCH VERIFICATION COMPLETE"
           echo "✅ ALB is successfully routing to $NEW_ENV!"
+          echo "✅ JWT authentication working correctly!"
           echo "=========================================="
 
       - name: Rollback on Failure

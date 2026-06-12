@@ -5,56 +5,11 @@ const MAX_INT = 2147483647;
 
 export const createCart = async (req, res) => {
     try {
-        const { userId } = req.body;
-
-        // Validation - Check if userId exists
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is required"
-            });
-        }
-
-        // Validate userId type - must be string or number
-        if (typeof userId !== 'string' && typeof userId !== 'number') {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid user ID"
-            });
-        }
-
-        // Convert to string to check length and format
-        const userIdStr = String(userId);
-
-        // Check if it's a valid numeric string (no scientific notation, no decimals)
-        if (!/^\d+$/.test(userIdStr)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid user ID format"
-            });
-        }
-
-        // Check length - INT max is 2147483647 (10 digits)
-        if (userIdStr.length > 10) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID exceeds maximum allowed value"
-            });
-        }
-
-        // Parse to integer
-        const userIdNum = parseInt(userIdStr, 10);
-
-        // Validate range
-        if (userIdNum <= 0 || userIdNum > MAX_INT) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID exceeds maximum allowed value"
-            });
-        }
+        // Get userId from JWT token (set by authenticateToken middleware)
+        const userId = req.user.userId;
 
         // Verify user exists
-        const user = await userService.getUserById(userIdNum);
+        const user = await userService.getUserById(userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -62,7 +17,7 @@ export const createCart = async (req, res) => {
             });
         }
 
-        const cart = await cartService.createCart(userIdNum);
+        const cart = await cartService.createCart(userId);
 
         res.status(201).json({
             success: true,

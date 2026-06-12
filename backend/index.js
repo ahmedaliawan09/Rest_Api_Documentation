@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import cartRoutes from "./routes/cartroute.js";
 import productRoutes from "./routes/productroute.js";
 import userRoutes from "./routes/userroute.js";
+import authRoutes from "./routes/authRoute.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { detailedLogger } from "./middleware/detailedLogger.js";
 import logger from "./config/logger.js";
@@ -30,6 +31,10 @@ app.get("/health", (req, res) => {
     });
 });
 
+// Auth routes (public - no token required)
+app.use("/api/auth", authRoutes);
+
+// Existing routes (currently public, can protect later)
 app.use("/api/cart", cartRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);

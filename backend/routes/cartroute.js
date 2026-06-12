@@ -5,10 +5,16 @@ import { removeItemFromCart } from "../controller/removeItemFromCart.js";
 import { checkoutCart } from "../controller/checkoutCart.js";
 import { deleteCart } from "../controller/deleteCart.js";
 import { validateObjectId } from "../middleware/validateObjectId.js";
+import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/create", validateObjectId('userId'), createCart);
+/**
+ * All cart routes require JWT authentication
+ */
+router.use(authenticateToken);
+
+router.post("/create", createCart);
 router.post("/add-item", validateObjectId('cartId', 'productId'), addItemToCart);
 router.delete("/remove-item/:productId", validateObjectId('cartId', 'productId'), removeItemFromCart);
 router.post("/checkout", validateObjectId('cartId'), checkoutCart);

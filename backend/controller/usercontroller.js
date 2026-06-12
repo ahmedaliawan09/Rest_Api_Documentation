@@ -1,4 +1,5 @@
 import userService from '../services/userService.js';
+import bcrypt from 'bcryptjs';
 
 const MAX_INT = 2147483647;
 
@@ -55,12 +56,25 @@ export const createUser = async (req, res) => {
             });
         }
 
-        const user = await userService.createUser(req.body);
+        // Hash password before saving
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create user with hashed password
+        const userData = {
+            ...req.body,
+            password: hashedPassword
+        };
+
+        const user = await userService.createUser(userData);
+
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
 
         res.status(201).json({
             success: true,
             message: "User created successfully",
-            data: user
+            data: userWithoutPassword
         });
     } catch (error) {
         console.error('Create user error:', error);
